@@ -1,5 +1,5 @@
-dataset/*
-training/*
-model/*
-test/*
+dataset/
+training/
+model/
+test/
 app2.py
