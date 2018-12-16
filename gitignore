@@ -1,0 +1,5 @@
+../dataset/
+../training/
+../model/
+../test/
+app2.py
