@@ -1,5 +1,6 @@
 dataset/
 training/
+trainingold/
 model/
 test/
 app2.py
