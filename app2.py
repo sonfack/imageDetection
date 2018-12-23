@@ -15,7 +15,7 @@ import numpy as np
 
 # Object detection
 
-# 1 divide your data set into test en trainning
+# 1 divide your data set into testold en trainning
 
 
 def test():
@@ -26,7 +26,7 @@ def test():
     print(sift)
 
 
-def createTestAndTrainningData(datasetFolder, test="./test/", training="./training/"):
+def createTestAndTrainningData(datasetFolder, test="./testold/", training="./trainingold/"):
     files = os.listdir(datasetFolder)
     print("Number of dataset : " + str(len(files)))
 
@@ -53,7 +53,7 @@ def createTestAndTrainningData(datasetFolder, test="./test/", training="./traini
 
 
 # Create SIFT descritor file
-def saveSIFTDescriptorAndKeypointFile(imageFile, test="./training", model="./model"):
+def saveSIFTDescriptorAndKeypointFile(imageFile, test="./trainingold", model="./model"):
     image = os.path.join(test, imageFile)
     img = cv2.imread(image, 0)
     sift = cv2.xfeatures2d.SIFT_create()
@@ -79,7 +79,7 @@ def saveSIFTDescriptorAndKeypointFile(imageFile, test="./training", model="./mod
     shutil.move(filename, model)
 
 
-def createSIFTDescriptorFile(imageFile, test="./training", model="./model"):
+def createSIFTDescriptorFile(imageFile, test="./trainingold", model="./model"):
     image = os.path.join(test, imageFile)
     img = cv2.imread(image)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -109,9 +109,9 @@ def createSIFTDescriptorFile(imageFile, test="./training", model="./model"):
     shutil.move(filename, model)
 
 
-# create SIFT file for all training set
+# create SIFT file for all trainingold set
 
-def createTrainingSIFTFiles(trainingFolder="./training"):
+def createTrainingSIFTFiles(trainingFolder="./trainingold"):
     for file in os.listdir(trainingFolder):
         saveSIFTDescriptorAndKeypointFile(file)
 
@@ -162,7 +162,7 @@ def readDescriptorFileAndDrawKp(filename, model="./model"):
 
 # keypoints matcher
 
-def keypointsMatcher(queryImage, testFolder="./test", modelFolder="./model"):
+def keypointsMatcher(queryImage, testFolder="./testold", modelFolder="./model"):
     sift = cv2.xfeatures2d.SIFT_create()
     img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
 
@@ -186,7 +186,7 @@ def keypointsMatcher(queryImage, testFolder="./test", modelFolder="./model"):
         matches = bf.knnMatch(des1, des2, k=2)
         print(len(np.array(matches).shape))
         print(np.array(matches).shape[1])
-        # Apply ratio test
+        # Apply ratio testold
         good = []
         # good_without_list = []
 
@@ -227,7 +227,7 @@ def keypointsMatcher(queryImage, testFolder="./test", modelFolder="./model"):
     # bf = cv2.BFMatcher()
     # matches = bf.knnMatch(des1, des2, k=2)
 
-    # Apply ratio test
+    # Apply ratio testold
     # good = []
     # good_without_list = []
 
@@ -256,9 +256,9 @@ def denseSIFT(img, step_size=20, feature_scale=40, img_bound=20):
 
 
 def main():
-    # test()
+    # testold()
     # createTestAndTrainningData("./dataset")
-    # createTrainingSIFTFiles("./training")
+    # createTrainingSIFTFiles("./trainingold")
     # createSIFTDescriptorFile("obj1__15.png")
     keypointsMatcher("obj2__185.png")
     # print(readDescriptorFileAndDrawKp("obj3__125"))

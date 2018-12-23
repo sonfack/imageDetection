@@ -1,3 +1,5 @@
+import sys
+import random
 import cv2
 import _pickle as cPickle
 import os, glob
@@ -6,6 +8,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 from collections import Counter
 
+# Main definition - constants
+from pip._vendor.distlib.compat import raw_input
+
+menu_actions = {}
 
 """
     How to install Opencv version containing SIFT and SURF image descriptor
@@ -14,9 +20,121 @@ from collections import Counter
     pip install opencv-contrib-python==3.4.2.16
 """
 
+
+
+# =======================
+#     MENUS FUNCTIONS
+# =======================
+
+# Main menu
+def main_menu():
+    os.system('clear')
+    print("Bienvenu à l'application pour la reconnaissance d'objets avec le descripteur SIFT,\n")
+    print("Veuillez choisir un menu que vous voulez pour demarrer:")
+    print("1. creation de la base teste et entrainement")
+    print("2. creation du modèle")
+    print("3. coorespondance des points d'intérêts")
+    print("4. affichage de la description d'une image")
+    print("5. Mise en correspondance de deux images")
+    print("6. calcul matrice de confusion ")
+    print("\n0. Quit")
+    choice = raw_input(" >>  ")
+    exec_menu(choice)
+
+    return
+
+
+# Execute menu
+def exec_menu(choice):
+    os.system('clear')
+    ch = choice.lower()
+    if ch == '':
+        menu_actions['main_menu']()
+    else:
+        try:
+            menu_actions[ch]()
+        except KeyError:
+            print("Invalid selection, please try again.\n")
+            menu_actions['main_menu']()
+    print("9. Back")
+    print("0. Quit")
+    choice = raw_input(" >>  ")
+    exec_menu(choice)
+    return
+
+
+def main1():
+    createTestAndTrainningData("./dataset")
+
+#OK
+def main2():
+     createTrainingSIFTFiles("./training")
+
+
+#OK
+def main3():
+
+    img = input("saisir le nom de l'objet correctement:")
+    print(img)
+    reponse = input("Voulez vous entrer le pourcnetage de distance ?  Y ou N : ")
+    if str(reponse) == "Y" or str(reponse) == "y":
+        pourcentage = input("saisir le pourcentage de la distance:")
+        pourcentage = float(pourcentage)
+        keypointsMatcher(img, distancePercentage=pourcentage)
+    else:
+        keypointsMatcher(img)
+
+#OK
+def main4():
+    img = input("saisir le nom de l'objet correctement:")
+
+    print(readDescriptorFileAndDrawKp(img))
+
+
+def main5():
+    img1 = input("Entrez une image se trouvant dans la base de test: ")
+    img2 = input("Entrez une deuxieme image se trouvant aussi dans la base test: ")
+    drawCorrespondanceTowSameImage(img1, img2)
+    #print(denseSIFT("butterfly.jpg"))
+
+
+def main6():
+    k = input("saisir le nombre d'images a tester par categorie: ")
+    k = int(k)
+    modelTest(k)
+
+
+# Back to main menu
+def back():
+    menu_actions['main_menu']()
+
+
+# Exit program
+def exit():
+    sys.exit()
+
+
+# =======================
+#    MENUS DEFINITIONS
+# =======================
+
+# Menu definition
+menu_actions = {
+    'main_menu': main_menu,
+    '1': main1,
+    '2': main2,
+    '3': main3,
+    '4': main4,
+    '5': main5,
+    '6': main6,
+    '9': back,
+    '0': exit,
+}
+
+
 # Object detection
 
-# 1 divide your data set into test en trainning
+# 1 divide your data set into testold en trainning
 
 
 def test():
@@ -27,7 +145,36 @@ def test():
     kp = sift.detect(gray, None)
     print(sift)
 
-def createTestAndTrainningData(datasetFolder, test = "./test/", training = "./training/"):
+def drawCorrespondanceTowSameImage(queryImage, searchImage, testFolder="./test"):
+
+    img1 = cv2.imread(str(os.path.join(testFolder, queryImage)), 0)  # queryImage
+    img2 = cv2.imread(str(os.path.join(testFolder, searchImage)), 0)  # trainImage
+
+    #Initiate SIFT detector
+    sift = cv2.xfeatures2d.SIFT_create()
+
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img1, None)
+    kp2, des2 = sift.detectAndCompute(img2, None)
+
+    # BFMatcher with default params
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(des1, des2, k=2)
+
+    # Apply ratio testold
+    good_without_list = []
+
+    for m, n in matches:
+        if m.distance < 0.95*n.distance:
+            good_without_list.append(m)
+
+    img2 = cv2.imread(os.path.join(testFolder, queryImage), 0)
+    img3 = cv2.drawMatches(img1, kp1, img2, kp2, good_without_list, None)
+
+    plt.imshow(img3)
+    plt.show()
+
+def createTestAndTrainningData(datasetFolder, test = "./test/", training = "./training/", numberTest=1, numberTrain=2):
     files = os.listdir(datasetFolder)
     print("Number of dataset : " + str(len(files)))
 
@@ -40,21 +187,28 @@ def createTestAndTrainningData(datasetFolder, test = "./test/", training = "./tr
     else:
         print("Directories  already exists")
 
-    count = 0
     dataset = os.path.dirname(datasetFolder)+"/"+os.path.basename(datasetFolder)
-    for file in files:
+    fileCount = 0
+    count = 0
+    while fileCount < len(files):
         if count % 2 == 0:
-            shutil.copy(dataset+'/'+file, test)
+            countTest = 0
+            while countTest < numberTest and files[fileCount]:
+                shutil.copy(dataset+'/'+files[fileCount], test)
+                countTest = countTest + 1
+                fileCount = fileCount + 1
         else:
-            shutil.copy(dataset + '/' + file, training)
+            countTraining = 0
+            while countTraining < numberTrain and files[fileCount]:
+                shutil.copy(dataset + '/' + files[fileCount], training)
+                countTraining = countTraining + 1
+                fileCount = fileCount + 1
 
         count = count + 1
 
-    print("Total files copied : "+str(count))
-
 
 # Create SIFT descritor file
-def saveSIFTDescriptorAndKeypointFile(imageFile, test="./training", model="./model"):
+def saveSIFTDescriptorAndKeypointFile(imageFile, test="./trainingold", model="./model"):
     image = os.path.join(test, imageFile)
     img = cv2.imread(image, 0)
     sift = cv2.xfeatures2d.SIFT_create()
@@ -110,7 +264,7 @@ def createSIFTDescriptorFile(imageFile, test="./training", model="./model"):
     shutil.move(filename, model)
 
 
-# create SIFT file for all training set
+# create SIFT file for all trainingold set
 
 def createTrainingSIFTFiles(trainingFolder = "./training"):
     for file in os.listdir(trainingFolder):
@@ -121,6 +275,8 @@ def createTrainingSIFTFiles(trainingFolder = "./training"):
 
 def readDescriptorFileAndDrawKp(filename, model= "./model"):
     keyPointDescriptor = []
+    name = filename.split(".")
+    filename = name[0]
     filenameWithPath = os.path.join(model,filename)
     index = cPickle.loads(open(filenameWithPath, "rb").read())
     keyPointDescriptor.append(index.get('kp'))
@@ -131,11 +287,11 @@ def readDescriptorFileAndDrawKp(filename, model= "./model"):
 '''
     Keypoints matcher, takes an image as queryImage and looks in the model folder descriptors tha match better 
     this image.
-    queryImage should be taken from the ./test folder
+    queryImage should be taken from the ./testold folder
     distancePercentage = 0.75  is the distance that is selected for each image corresponding image in the model
 '''
 
-def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", distancePercentage=0.75):
+def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", distancePercentage=0.65):
     sift = cv2.xfeatures2d.SIFT_create()
     img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
 
@@ -158,14 +314,14 @@ def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", 
         bf = cv2.BFMatcher()
         matches = bf.knnMatch(des2, des1, k=2)
 
-        # Apply ratio test
+        # Apply ratio testold
         good = []
 
         if len(np.array(matches).shape) == 2 and np.array(matches).shape[1] == 2:
             for m, n in matches:
                 if (m.distance/n.distance) > distancePercentage:
                     good.append([m])
-            if len(good) > numberKpToSelect:
+            if len(good) < numberKpToSelect:
                 lilstOfSelectedModel.append(model)
                 print(model, " ", "selected")
 
@@ -206,15 +362,87 @@ def denseSIFT(img, step_size=20, feature_scale=40, img_bound=20):
     return detector.detect(img)
 
 
+def keypointsMatcherSecond(queryImage, testFolder = "./test", modelFolder= "./model", distancePercentage=0.65):
+    sift = cv2.xfeatures2d.SIFT_create()
+    img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
+
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img1, None)
+
+    # read through the model folder
+    listOfModel = os.listdir(modelFolder)
+    numberKpToSelect = 2*(len(kp1)//3)
+    lilstOfSelectedModel = []
+    for model in listOfModel:
+        keyAndDescriptor = readDescriptorFileAndDrawKp(model)
+        des2 = keyAndDescriptor[1]
+
+        # BFMatcher with default params
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(des2, des1, k=2)
+
+        # Apply ratio testold
+        good = []
+
+        if len(np.array(matches).shape) == 2 and np.array(matches).shape[1] == 2:
+            for m, n in matches:
+                if (m.distance/n.distance) > distancePercentage:
+                    good.append([m])
+            if len(good) < numberKpToSelect:
+                lilstOfSelectedModel.append(model)
+
+
+    #print(lilstOfSelectedModel)
+    seen = []
+    for ob in lilstOfSelectedModel:
+        filename = ob.split("__")[0]
+        seen.append(filename)
+    listSeen = Counter(seen)
+    for element in listSeen:
+        print(element,' ', listSeen[element], "  ",countCategoryElement(element), listSeen[element]/countCategoryElement(element))
+    print(len(lilstOfSelectedModel))
+
+
+def modelTest(k=5,testFolder="./test"):
+    i = 1
+    while i <= 100 :
+        fileCount = 0
+        listOfSelectedImage = []
+        while fileCount < k:
+            fileInCategory = random.randint(1,101)
+            fileName = "obj"+str(i)+"__"+str(fileInCategory)+".png"
+            filePath = os.path.join(testFolder,fileName)
+            if os.path.exists(filePath) and not fileName in listOfSelectedImage:
+                print(filePath)
+                listOfSelectedImage.append(fileName)
+                keypointsMatcherSecond(fileName)
+                fileCount = fileCount + 1
+        i = i + 1
+
+    print("9. Back")
+    print("0. Quit")
+    choice = raw_input(" >>  ")
+    exec_menu(choice)
+
+
+def getSizesOfDataSet(folder):
+    print(len( os.listdir(folder)))
+
+
 
 def main():
-    #test()
+
+    main_menu()
+    #getSizesOfDataSet("./test")
+    #testold()
     #createTestAndTrainningData("./dataset")
     #createTrainingSIFTFiles("./training")
     #createSIFTDescriptorFile("obj1__15.png")
-    keypointsMatcher("obj91__180.png", distancePercentage=0.5)
+    #keypointsMatcher("obj91__310.png", distancePercentage=0.65)
     #print(readDescriptorFileAndDrawKp("obj3__125"))
     #print(denseSIFT("butterfly.jpg"))
+    #drawCorrespondanceTowSameImage("obj76__320.png", "obj76__250.png")
+    #modelTest(k=1)
 
 if __name__ == "__main__":
     main()

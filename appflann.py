@@ -23,7 +23,7 @@ img2 = cv2.imread(imgname2)
 gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 kpts2, descs2 = sift.detectAndCompute(gray2,None)
 
-## Ratio test
+## Ratio testold
 matches = matcher.knnMatch(descs1, descs2, 2)
 matchesMask = [[0,0] for i in range(len(matches))]
 for i, (m1,m2) in enumerate(matches):
