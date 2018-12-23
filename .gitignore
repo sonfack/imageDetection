@@ -6,3 +6,5 @@ modelold/
 test/
 testold/
 app2.py
+menu.py
+appflann.py
