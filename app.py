@@ -11,6 +11,10 @@ from collections import Counter
 # Main definition - constants
 from pip._vendor.distlib.compat import raw_input
 
+from sklearn.metrics import confusion_matrix
+
+y_preD = []
+y_truE = []
 menu_actions = {}
 
 """
@@ -292,6 +296,7 @@ def readDescriptorFileAndDrawKp(filename, model= "./model"):
 '''
 
 def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", distancePercentage=0.65):
+
     sift = cv2.xfeatures2d.SIFT_create()
     img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
 
@@ -363,6 +368,7 @@ def denseSIFT(img, step_size=20, feature_scale=40, img_bound=20):
 
 
 def keypointsMatcherSecond(queryImage, testFolder = "./test", modelFolder= "./model", distancePercentage=0.65):
+
     sift = cv2.xfeatures2d.SIFT_create()
     img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
 
@@ -374,6 +380,7 @@ def keypointsMatcherSecond(queryImage, testFolder = "./test", modelFolder= "./mo
     numberKpToSelect = 2*(len(kp1)//3)
     lilstOfSelectedModel = []
     for model in listOfModel:
+
         keyAndDescriptor = readDescriptorFileAndDrawKp(model)
         des2 = keyAndDescriptor[1]
 
@@ -392,33 +399,65 @@ def keypointsMatcherSecond(queryImage, testFolder = "./test", modelFolder= "./mo
                 lilstOfSelectedModel.append(model)
 
 
+
     #print(lilstOfSelectedModel)
     seen = []
     for ob in lilstOfSelectedModel:
         filename = ob.split("__")[0]
         seen.append(filename)
     listSeen = Counter(seen)
+    trueList = []
     for element in listSeen:
         print(element,' ', listSeen[element], "  ",countCategoryElement(element), listSeen[element]/countCategoryElement(element))
+        if listSeen[element]/countCategoryElement(element) >= 0.9:
+            trueList.append(element)
+    y_truE.append(trueList)
     print(len(lilstOfSelectedModel))
+    #print(y_true)
+    #print(len(y_true))
 
 
 def modelTest(k=5,testFolder="./test"):
+    y_pred = []
+    y_true = []
+
     i = 1
     while i <= 100 :
         fileCount = 0
         listOfSelectedImage = []
         while fileCount < k:
-            fileInCategory = random.randint(1,101)
+            fileInCategory = random.randint(1,1001)
             fileName = "obj"+str(i)+"__"+str(fileInCategory)+".png"
             filePath = os.path.join(testFolder,fileName)
             if os.path.exists(filePath) and not fileName in listOfSelectedImage:
                 print(filePath)
                 listOfSelectedImage.append(fileName)
+
+                myModel = fileName.split("__")
+                y_preD.append(myModel[0])
+
                 keypointsMatcherSecond(fileName)
                 fileCount = fileCount + 1
         i = i + 1
-
+    print("=======================================================================================")
+    print(y_truE)
+    print("***************************************************************************************")
+    print(y_preD)
+    label = y_preD
+    print("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll")
+    print(label)
+    for i in range(len(y_preD)):
+        for j in range(len(y_truE[i])):
+            truE = y_truE[i]
+            y_pred.append(y_preD[i])
+            y_true.append(truE[j])
+    print("=======================================================================================")
+    print(y_true)
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print(y_pred)
+    results = confusion_matrix(y_true, y_pred)
+    print(results)
+    print("=======================================================================================")
     print("9. Back")
     print("0. Quit")
     choice = raw_input(" >>  ")
