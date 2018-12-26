@@ -212,7 +212,7 @@ def createTestAndTrainningData(datasetFolder, test = "./test/", training = "./tr
 
 
 # Create SIFT descritor file
-def saveSIFTDescriptorAndKeypointFile(imageFile, test="./trainingold", model="./model"):
+def saveSIFTDescriptorAndKeypointFile(imageFile, test="./training", model="./model"):
     image = os.path.join(test, imageFile)
     img = cv2.imread(image, 0)
     sift = cv2.xfeatures2d.SIFT_create()
