@@ -90,7 +90,7 @@ def main3():
 
 #OK
 def main4():
-    img = input("saisir le nom de l'objet correctement:")
+    img = input("saisir le nom de l'objet(du dossier training) correctement:")
 
     print(readDescriptorFileAndDrawKp(img))
 
