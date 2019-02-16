@@ -336,6 +336,7 @@ def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", 
     sift = cv2.xfeatures2d.SIFT_create()
     img1 = cv2.imread(os.path.join(testFolder, queryImage), 0)  # queryImage
 
+
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(img1, None)
 
@@ -344,38 +345,56 @@ def keypointsMatcher(queryImage, testFolder = "./test", modelFolder= "./model", 
     print("Number of models "+str(len(listOfModel)))
     print(len(des1))
     print(len(kp1))
-    numberKpToSelect = 2*(len(kp1)//3)
+
+    numberKpToSelect = len(kp1)//3
     lilstOfSelectedModel = []
 
     for model in listOfModel:
         keyAndDescriptor = readDescriptorFileAndDrawKp(model)
-        des2 = keyAndDescriptor[1]
+        kp2 = keyAndDescriptor[0]
+        print('kp2', len(kp2))
+        print('borne', len(kp1) - numberKpToSelect, 'borne', len(kp1) + numberKpToSelect)
 
-        # BFMatcher with default params
-        bf = cv2.BFMatcher()
-        matches = bf.knnMatch(des2, des1, k=2)
+        if (len(kp2) >= len(kp1) - numberKpToSelect) and (len(kp2) <= len(kp1) + numberKpToSelect):
+            des2 = keyAndDescriptor[1]
+            print('first')
+            # BFMatcher with default params
+            bf = cv2.BFMatcher()
+            matches = bf.knnMatch(des2, des1, k=2)
 
-        # Apply ratio testold
-        good = []
+            # Apply ratio testold
+            good = []
 
-        if len(np.array(matches).shape) == 2 and np.array(matches).shape[1] == 2:
+            #if len(np.array(matches).shape) == 2 and np.array(matches).shape[1] == 2:
             for m, n in matches:
-                if (m.distance/n.distance) > distancePercentage:
+                if (m.distance < distancePercentage*n.distance):
                     good.append([m])
-            if len(good) < numberKpToSelect:
-                lilstOfSelectedModel.append(model)
-                print(model, " ", "selected")
+            rapport = len(good)/ len(kp1)
+            if rapport >= 0.60:
+                lilstOfSelectedModel.append({'model':model, 'numberDescriptor':len(good), 'score':round(rapport, 2), 'ratio':round(m.distance/n.distance, 2)})
+                print(model, " ", "selected  rapprot")
 
-    #print(lilstOfSelectedModel)
+    lilstOfSelectedModel = sorted(lilstOfSelectedModel, key=lambda k:k['numberDescriptor'])
+    ratio = 'Ratio: '+str(round(lilstOfSelectedModel[0]['numberDescriptor']/lilstOfSelectedModel[-1]['numberDescriptor'], 2))
     seen = []
     for ob in lilstOfSelectedModel:
-        filename = ob.split("__")[0]
+        filename = ob['model'].split("__")[0]
         seen.append(filename)
     listSeen = Counter(seen)
     for element in listSeen:
-        print(element,' ', listSeen[element], "  ",countCategoryElement(element), listSeen[element]/countCategoryElement(element))
-    print(len(lilstOfSelectedModel))
-
+        print('\n\n',element,' ', listSeen[element], "  ",countCategoryElement(element), listSeen[element]/countCategoryElement(element),'\n\n')
+    print(lilstOfSelectedModel)
+    font = cv2.FONT_ITALIC
+    #cv2.putText(img1, ratio, (5, 122), font, 0.5, (255, 0, 0), 2, cv2.LINE_AA)
+    cv2.imshow(queryImage, img1)
+    for i in range(len(lilstOfSelectedModel)):
+        nameImage = lilstOfSelectedModel[i]['model']+'.png'
+        fileImage = os.path.join('./training', nameImage)
+        img = cv2.imread(fileImage)
+        cv2.putText(img, 'Ratio:'+str(lilstOfSelectedModel[i]['ratio']), (5, 122), font, 0.5, (255, 0, 0), 2, cv2.LINE_AA)
+        #cv2.putText(img, 'score :'+str(lilstOfSelectedModel[i]['score']), (5, 10), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
+        cv2.imshow(lilstOfSelectedModel[i]['model'], img)
+    cv2.waitKey()
 
 
 def calculateCorrespond(desQuery, desModel, numberMatches):
@@ -443,6 +462,7 @@ def keypointsMatcherSecond(queryImage, testFolder = "./test", modelFolder= "./mo
         seen.append(filename)
     listSeen = Counter(seen)
     trueList = []
+
     for element in listSeen:
         print(element,' ', listSeen[element], "  ",countCategoryElement(element), listSeen[element]/countCategoryElement(element))
         if listSeen[element]/countCategoryElement(element) >= 0.9:
