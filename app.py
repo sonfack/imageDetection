@@ -40,7 +40,9 @@ def main_menu():
     print("3. coorespondance des points d'intérêts")
     print("4. affichage de la description d'une image")
     print("5. Mise en correspondance de deux images")
-    print("6. calcul matrice de confusion ")
+    print("6. Calcul matrice de confusion ")
+    print("7. Dessiner les points d'interet")
+    print("8. Dessiner les descripteurs")
     print("\n0. Quit")
     choice = raw_input(" >>  ")
     exec_menu(choice)
@@ -107,6 +109,16 @@ def main6():
     k = int(k)
     modelTest(k)
 
+def main7():
+    k = input("entrez une image se trouvant dans votre base de test: ")
+    k = str(k)
+    drawKeyPointsOnImage(k)
+
+def main8():
+    k = input("entrez une image se trouvant dans votre base de test: ")
+    k = str(k)
+    drawKeyDescriptorsOnImage(k)
+
 
 # Back to main menu
 def back():
@@ -131,6 +143,8 @@ menu_actions = {
     '4': main4,
     '5': main5,
     '6': main6,
+    '7': main7,
+    '8': main8,
     '9': back,
     '0': exit,
 }
@@ -148,6 +162,28 @@ def test():
     sift = cv2.xfeatures2d.SIFT_create()
     kp = sift.detect(gray, None)
     print(sift)
+
+def drawKeyPointsOnImage(image):
+    file = os.path.join('./test', image)
+    img = cv2.imread(file)
+    sift = cv2.xfeatures2d.SIFT_create()
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img, None)
+    cv2.imshow('original', img)
+    img_with_keypoints = cv2.drawKeypoints(img, kp1, img)
+    cv2.imshow('keypoints', img_with_keypoints)
+    cv2.waitKey()
+
+def drawKeyDescriptorsOnImage(image):
+    file = os.path.join('./test', image)
+    img = cv2.imread(file)
+    sift = cv2.xfeatures2d.SIFT_create()
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img, None)
+    cv2.imshow('original', img)
+    img_with_keypoints = cv2.drawKeypoints(img, kp1, img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    cv2.imshow('descriptors', img_with_keypoints)
+    cv2.waitKey()
 
 def drawCorrespondanceTowSameImage(queryImage, searchImage, testFolder="./test"):
 
